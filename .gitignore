@@ -1,0 +1,54 @@
+# Dipendenze Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Uscita del build
+dist/
+build/
+
+# Cartelle temporanee
+tmp/
+temp/
+
+# Output di test
+coverage/
+*.lcov
+
+# File di configurazione locali
+.env
+.env.local
+.env.*.local
+
+# File di log
+logs/
+*.log
+
+# Configurazioni IDE/editor
+#.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# Configurazioni OS specifiche
+*.swp
+*.lock
+*.pid
+*.seed
+*.pid.lock
+
+# Pacchetti compressi
+*.tgz
+
+# File generati da lock per installazioni
+package-lock.json
+yarn.lock
+
+# Altri file opzionali da ignorare
+*.bak
+*.orig

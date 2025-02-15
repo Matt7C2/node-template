@@ -1,0 +1,22 @@
+{
+  "name": "node_template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "debug": "cross-env ENV=debug ENV2=debug2 node .",
+    "prod": "cross-env ENV=prod ENV2=prod2 node ."
+  },
+  "config": {
+    "VAR_A": "a"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.7",
+    "winston": "^3.17.0"
+  }
+}
