@@ -16,6 +16,19 @@
             "restart": true,
             "console": "integratedTerminal",
             //"internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Start Prod",
+            "runtimeExecutable": "pnpm",
+            "runtimeArgs": [
+              "run-script",
+              "prod"
+            ],
+            "restart": true,
+            "console": "integratedTerminal",
+            //"internalConsoleOptions": "neverOpen"
         }
     ]
 }
