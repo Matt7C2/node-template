@@ -19,6 +19,8 @@ env:
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
+permissions:  
+  contents: write  # 🔥 Serve per creare e pushare i tag
 
 jobs:
   auto-tag:
@@ -27,15 +29,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Necessario per leggere i tag esistenti
-
-      # Install the cosign tool except on PR
-      # https://github.com/sigstore/cosign-installer
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
-        with:
-          cosign-release: 'v2.2.4'
+          fetch-depth: 0  # 🔥 Necessario per leggere tutti i tag
 
       - name: Get latest tag
         id: get_latest
@@ -56,6 +50,8 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ env.new_tag }}
           git push origin ${{ env.new_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 🔥 Usa il token per autenticarsi
 
   build:
     needs: auto-tag  # Dipende dal job precedente
