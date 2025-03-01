@@ -21,8 +21,36 @@ env:
 
 
 jobs:
-  build:
+  auto-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necessario per leggere i tag esistenti
 
+      - name: Get latest tag
+        id: get_latest
+        run: |
+          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          echo "Latest tag: $latest_tag"
+          if [[ -z "$latest_tag" ]]; then
+            new_tag="v1.0.0"
+          else
+            new_tag=$(echo $latest_tag | awk -F. '{$NF++; print $1"."$2"."$3}' OFS=.)
+          fi
+          echo "New tag: $new_tag"
+          echo "new_tag=$new_tag" >> $GITHUB_ENV
+
+      - name: Create new tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ env.new_tag }}
+          git push origin ${{ env.new_tag }}
+
+  build:
+    needs: auto-tag  # Dipende dal job precedente
     runs-on: ubuntu-latest
     permissions:
       contents: read
