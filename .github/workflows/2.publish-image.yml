@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    needs: auto-tag  # Dipende dal job precedente
+    #needs: auto-tag  # Dipende dal job precedente
     runs-on: ubuntu-latest
     permissions:
       contents: read
