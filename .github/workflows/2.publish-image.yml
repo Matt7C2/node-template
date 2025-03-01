@@ -19,9 +19,10 @@ env:
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
+
 jobs:
   build:
-    #needs: auto-tag  # Dipende dal job precedente
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
