@@ -1,0 +1,58 @@
+name: Auto Tag and Release
+
+on:
+  push:
+    branches:
+      - main  # Si attiva quando pushi su main
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
+
+      - name: Generate new version
+        id: new_version
+        run: |
+          LATEST_TAG=${{ env.latest_tag }}
+          VERSION_PART="patch" # Cambia con "minor" o "major" se serve
+          
+          # Estrai la versione attuale
+          MAJOR=$(echo $LATEST_TAG | cut -d. -f1 | sed 's/v//')
+          MINOR=$(echo $LATEST_TAG | cut -d. -f2)
+          PATCH=$(echo $LATEST_TAG | cut -d. -f3)
+
+          # Incrementa la versione
+          if [[ "$VERSION_PART" == "major" ]]; then
+            NEW_TAG="v$((MAJOR + 1)).0.0"
+          elif [[ "$VERSION_PART" == "minor" ]]; then
+            NEW_TAG="v$MAJOR.$((MINOR + 1)).0"
+          else
+            NEW_TAG="v$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+
+          echo "New tag: $NEW_TAG"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_ENV
+
+      - name: Push new tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ env.new_tag }}
+          git push origin ${{ env.new_tag }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.new_tag }}
+          name: "Release ${{ env.new_tag }}"
+          draft: false
+          prerelease: false
