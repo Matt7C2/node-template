@@ -1,4 +1,4 @@
-# node_template
+# node-template
 Template iniziale di un progetto Node.  
 La sintassi è in ecma script moderno (type=module).  
 Il linguaggio Node in abbinata al package manager PNPN permette di importare e gestire le librerie esterne.  
