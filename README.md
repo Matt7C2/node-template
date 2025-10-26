@@ -31,6 +31,9 @@ Esegue il progetto a runtime con la configurazione di produzione
 `npm run debug`  
 Per avviare il progetto in debug o premendo F5. Verranno caricate le variabili di debug.
 
+`node src/index.js`  
+Avvio con node con caricamento di sole variabili .env
+
 ## Creazione di un progetto da zero
 `pnpm init nome_progetto`  
 Per inizializzare il progetto. Verranno creati i relativi file di inizializzazione, tra cui **package.json**
@@ -41,14 +44,23 @@ Per aggiungere una libreria pubblica o privata
 ## Docker
 Sono presenti due file per poter gestire il progetto in un container.
 
-**Dockerfile**
-Contiene le istruzioni per creare l'immagine.  
-Per creare l'immagine:
+**Dockerfile**  
+Contiene le istruzioni per creare l'immagine. 
+
+* Per creare l'immagine dalla cartella docker:  
 `docker image build -t ghcr.io/matt7c2/node-template .`
+
+* Dalla cartella root:  
+`docker image build -t ghcr.io/matt7c2/node-template -f docker/Dockerfile .`
 
 Per pushare:  
 `docker image push ghcr.io/matt7c2/node-template .`
 
-**compose.yml**
-Per avviare il container buildando direttamente l'immagine dal Dockefile:
+**compose.yml**  
+Per avviare il container buildando direttamente l'immagine dal Dockefile.
+
+* Da dentro la cartella docker:  
 `docker compose up --build`
+
+ * Da dentro la cartella root:  
+`docker compose -f docker/compose.yml up --build`
