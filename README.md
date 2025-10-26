@@ -64,3 +64,4 @@ Per avviare il container buildando direttamente l'immagine dal Dockefile.
 
  * Da dentro la cartella root:  
 `docker compose -f docker/compose.yml up --build`
+
