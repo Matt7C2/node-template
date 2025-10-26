@@ -4,32 +4,78 @@
 # For more help, visit the .dockerignore file reference guide at
 # https://docs.docker.com/engine/reference/builder/#dockerignore-file
 
-**/.classpath
-**/.dockerignore
-**/.env
-**/.git
-**/.gitignore
-**/.project
-**/.settings
-**/.toolstarget
-**/.vs
-**/.vscode
-**/.next
-**/.cache
-**/*.*proj.user
-**/*.dbmdl
-**/*.jfm
-**/charts
-**/docker-compose*
-**/compose*
-**/Dockerfile*
-**/node_modules
-**/npm-debug.log
-**/obj
-**/secrets.dev.yaml
-**/values.dev.yaml
-**/build
-**/dist
-**/github
-LICENSE
+# =========================
+# NODE / DEPENDENZE
+# =========================
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-store
+.pnp.*
+
+# =========================
+# COSTRUZIONE / BUILD
+# =========================
+dist/
+build/
+coverage/
+.cache/
+.tmp/
+temp/
+*.tsbuildinfo
+
+# =========================
+# CONTROLLO VERSIONE
+# =========================
+.git
+.gitignore
+.gitattributes
+
+# =========================
+# CONFIGURAZIONE / AMBIENTE
+# =========================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# =========================
+# IDE / SISTEMA / MISC
+# =========================
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.bak
+*.log
+
+# =========================
+# TEST / DOCUMENTAZIONE
+# =========================
+tests/
+test/
+__tests__/
+docs/
+examples/
+spec/
+
+# =========================
+# DOCKER / CI
+# =========================
+docker-compose*.yml
+Dockerfile*
+.gitlab-ci.yml
+.github/
+
+node-template.code-workspace
+
 README.md
+docker/
+.dockerignore
+.env.example

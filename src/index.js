@@ -2,14 +2,16 @@
 import dotenv from 'dotenv'; //necessaria per caricare le variabili di ambiente presenti in: 1) eventuale script di avvio; 2) 7file di configurazione ".env"
 
 // Import internals
-import {logger} from './utils/index.js'
+import {logger} from './utils/index.js';
+import {wait} from './utils/libs.js'
+
 
 // Import externals
 // ...
 
 dotenv.config()
 
-const main = () => {
+const main = async () => {
     // info presenti nello script di avvio (visibili solo in windows con il "set" all'interno dello script di npm)
     logger.info(`pnpm run script -> ENV: ${process.env.ENV}`)
     logger.info(`pnpm run script -> ENV2: ${process.env.ENV2}`)
@@ -23,6 +25,8 @@ const main = () => {
     // Variabili presenti nel Dockerfile
     logger.info(`docker env -> ENV_DOCKER: ${process.env.ENV_DOCKER}`)
     logger.info(`docker env -> TZ: ${process.env.TZ}`)
+
+    //await wait(300); # per il container 
 }
 
 main();
