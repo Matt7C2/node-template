@@ -2,90 +2,49 @@ name: publish-image
 
 on:
   push:
-    # Esegue solo sulla push a 'main'
     branches: [ "main" ]
-  # Mantiene il trigger per i tag, in caso un utente ne crei uno manualmente
-  tags: [ 'v*.*.*' ]
+    tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
 
 env:
   REGISTRY: ghcr.io
 
-permissions:
-  # Necessario per l'auto-tagging tramite API
-  contents: write
-  # Necessario per la build e push dell'immagine
-  packages: write
-  id-token: write
+permissions:  
+  contents: write  # Serve per creare e pushare i tag
 
 jobs:
-  # 1. auto-tag: Crea e pusha il nuovo tag (SOLO su push a 'main')
   auto-tag:
     runs-on: ubuntu-latest
-    # Esegue il job solo se l'evento è un push su 'main'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    # L'output del tag sarà usato dal job 'build'
     outputs:
-      new_tag: ${{ steps.create_tag.outputs.new_tag }} 
-
+      new_tag: ${{ steps.get_latest.outputs.new_tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necessario per recuperare tutti i tag
+          fetch-depth: 0
 
-      - name: Calculate next tag
-        id: calc_tag
+      - name: Get latest tag
+        id: get_latest
         run: |
           latest_tag=$(git tag --sort=-v:refname | head -n 1)
-          echo "Latest tag found: $latest_tag"
+          echo "Latest tag: $latest_tag"
           if [[ -z "$latest_tag" ]]; then
-            # Se nessun tag esiste, inizia da v1.0.0
             new_tag="v1.0.0"
           else
-            # Incrementa la patch version (Z)
-            # Questo comando incrementa l'ultimo numero (patch)
             new_tag=$(echo $latest_tag | awk -F. '{$NF++; print $1"."$2"."$3}' OFS=. )
           fi
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
           echo "Generated tag: $new_tag"
-          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT # Invia l'output allo step successivo
-
-      # SOLUZIONE ANTI-LOOP: Usa l'API di GitHub per creare il tag.
-      # L'uso di github.rest.git.createRef con il GITHUB_TOKEN di default 
-      # NON scatena un nuovo workflow.
-      - name: Create and push new tag via GitHub API
-        id: create_tag
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const new_tag = "${{ steps.calc_tag.outputs.new_tag }}";
-            console.log(`Attempting to create tag: ${new_tag}`);
-            try {
-              await github.rest.git.createRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: `refs/tags/${new_tag}`,
-                sha: context.sha // Lo SHA del commit che ha scatenato il push
-              });
-              console.log(`Successfully created and pushed tag: ${new_tag}`);
-            } catch (error) {
-              // Ignora l'errore 422 se il tag esiste già (es. re-run del workflow)
-              if (error.status === 422 && error.response.data.message.includes('Reference already exists')) {
-                console.log(`Tag ${new_tag} already exists. Proceeding.`);
-              } else {
-                throw error;
-              }
-            }
-            // Imposta l'output per il job 'build'
-            core.setOutput('new_tag', new_tag); 
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create new tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.get_latest.outputs.new_tag }}
+          git push origin ${{ steps.get_latest.outputs.new_tag }}
         env:
-          # Per usare core.setOutput, dobbiamo passare la reference
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. build: Costruisce e pubblica l'immagine
   build:
     needs: auto-tag
     runs-on: ubuntu-latest
@@ -108,7 +67,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log into registry ${{ env.REGISTRY }}
-        # Esegue il login solo se non è una PR
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
@@ -116,35 +74,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # LOGICA PIÙ ROBUSTA PER DETERMINARE IL TAG DA USARE
-      - name: Determine final image tag
+      - name: Prepare lowercase image name and tags
         run: |
-          # 1. Priorità al Tag (se il workflow è scatenato da un tag manuale)
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG_TO_USE="${GITHUB_REF_NAME}"
-          # 2. Se è un push a 'main', usa il tag generato dal job 'auto-tag'
-          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
-            # 'needs.auto-tag.outputs.new_tag' è disponibile grazie a 'needs: auto-tag'
-            TAG_TO_USE="${{ needs.auto-tag.outputs.new_tag }}"
-          # 3. Altrimenti (es. Pull Request), usa un tag basato sullo SHA
-          else
-            TAG_TO_USE="pr-${GITHUB_SHA::7}"
-          fi
-          
           IMAGE_NAME_LOWER=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
-          TAG_LOWER=$(echo "${TAG_TO_USE}" | tr '[:upper:]' '[:lower:]')
-          
+          TAG_LOWER=$(echo "${{ needs.auto-tag.outputs.new_tag }}" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_NAME_LOWER=$IMAGE_NAME_LOWER" >> $GITHUB_ENV
           echo "TAG_LOWER=$TAG_LOWER" >> $GITHUB_ENV
           echo "Full image tag: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${TAG_LOWER}"
-
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/Dockerfile
-          # Push solo se non è una Pull Request
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.TAG_LOWER }}
@@ -152,9 +94,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ... (Cosign signing - puoi scommentarlo quando sei pronto)
+      # - name: Sign the published Docker image
+      #   if: ${{ github.event_name != 'pull_request' }}
+      #   env:
+      #     IMAGE_FULL: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.TAG_LOWER }}
+      #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
+      #   run: cosign sign --yes ${IMAGE_FULL}@${DIGEST}
 
-  # 3. cleanup: Rimuove le vecchie immagini non utilizzate
   cleanup:
     name: Cleanup old images
     needs: build
@@ -164,12 +110,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Delete old image versions (keep last 3)
+      - name: Delete old image versions (keep last 6)
         uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ github.event.repository.name }}
           package-type: container
-          min-versions-to-keep: 3
+          min-versions-to-keep: 6
           token: ${{ secrets.GITHUB_TOKEN }}
           delete-untagged-versions: true
           days-before-deletion: 0
