@@ -73,16 +73,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern=v*.*.*
-
-
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5
@@ -97,9 +87,9 @@ jobs:
       - name: Sign the published Docker image
         if: ${{ github.event_name != 'pull_request' }}
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+          TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.new_tag }}
+        run: cosign sign --yes $TAG@$DIGEST
 
   cleanup:
     name: Cleanup old images
@@ -110,9 +100,10 @@ jobs:
       contents: read
 
     steps:
-      - name: Delete old image versions (keep last 10)
+      - name: Delete old image versions (keep last 3)
         uses: actions/delete-package-versions@v5
         with:
+          owner: ${{ github.repository_owner }}
           package-name: ${{ github.event.repository.name }}
           package-type: container
           min-versions-to-keep: 3
