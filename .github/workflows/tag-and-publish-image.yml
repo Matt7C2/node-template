@@ -12,11 +12,11 @@ on:
 env:
   REGISTRY: ghcr.io
 
-permissions:  
+permissions:
   # Necessario per l'auto-tagging tramite API
   contents: write
   # Necessario per la build e push dell'immagine
-  packages: write  
+  packages: write
   id-token: write
 
 jobs:
