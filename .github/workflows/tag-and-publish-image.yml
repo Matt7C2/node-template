@@ -17,6 +17,8 @@ permissions:
 jobs:
   auto-tag:
     runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.set_tag.outputs.new_tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,23 +26,24 @@ jobs:
           fetch-depth: 0
 
       - name: Get latest tag
-        id: get_latest
+        id: set_tag
         run: |
           latest_tag=$(git tag --sort=-v:refname | head -n 1)
-          echo "Latest tag: $latest_tag"
           if [[ -z "$latest_tag" ]]; then
             new_tag="v1.0.0"
           else
             new_tag=$(echo $latest_tag | awk -F. '{$NF++; print $1"."$2"."$3}' OFS=. )
           fi
-          echo "new_tag=$new_tag" >> $GITHUB_ENV
+          echo "new_tag=$new_tag"
+          # Salva come output del step
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
       - name: Create new tag
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ env.new_tag }}
-          git push origin ${{ env.new_tag }}
+          git tag ${{ steps.set_tag.outputs.new_tag }}
+          git push origin ${{ steps.set_tag.outputs.new_tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -80,7 +83,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.new_tag }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.auto-tag.outputs.new_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -88,7 +91,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         env:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-          TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.new_tag }}
+          TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.auto-tag.outputs.new_tag }}
         run: cosign sign --yes $TAG@$DIGEST
 
   cleanup:
