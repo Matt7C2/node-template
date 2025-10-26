@@ -109,7 +109,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Delete old image versions (keep last 10)
+      - name: Delete old image versions (keep last 3)
         uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ github.event.repository.name }}
