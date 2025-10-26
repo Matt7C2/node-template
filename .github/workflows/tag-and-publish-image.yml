@@ -1,4 +1,4 @@
-name: Docker Image Build and Cleanup
+name: Build, Push to GHCR, and Cleanup
 
 on:
   push:
@@ -8,59 +8,69 @@ on:
     branches:
       - main
 
-# Permetti al GITHUB_TOKEN di scrivere pacchetti e leggere contenuti
+# Permessi richiesti:
+# - packages: write per pushare l'immagine
+# - contents: read per il checkout e i metadati
 permissions:
   contents: read
   packages: write
 
+# Variabili riutilizzabili
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }} # Nome predefinito: <USER>/<REPO_NAME>
+
 jobs:
-  build_and_push:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Registry
-        # Sostituisci con il tuo registry (es. docker.io o ghcr.io)
+      - name: Log in to GitHub Container Registry (GHCR)
         uses: docker/login-action@v3
         with:
-          registry: <YOUR_REGISTRY> # Esempio: ghcr.io
-          username: ${{ secrets.DOCKERHUB_USERNAME }} # O ${{ github.actor }} per GHCR
-          password: ${{ secrets.DOCKERHUB_TOKEN }} # O ${{ secrets.GITHUB_TOKEN }} per GHCR
+          registry: ${{ env.REGISTRY }}
+          # Usa l'utente che ha attivato il workflow
+          username: ${{ github.actor }} 
+          # Usa il token predefinito di GitHub Actions
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
+      - name: Extract Docker metadata and tags
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: <YOUR_REGISTRY>/<YOUR_IMAGE_NAME>
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            # Tag: latest (solo su push al main)
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-            type=sha,format=short,prefix=sha-
-            type=ref,event=branch
-            # Aggiunge un tag basato sul run ID per una versione univoca
+            # Tag: versione univoca con l'ID del run
             type=raw,value=${{ github.run_id }}
-
+            # Tag: versione con short SHA (utile per identificazione)
+            type=sha,format=short
+            
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }} # Fai il push solo su eventi di "push" (sul main)
+          # Push solo su push, non su pull request
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  # Job per la pulizia, viene eseguito solo dopo un push sul main
-  cleanup:
+  # Job di pulizia: eseguito solo dopo un push andato a buon fine sul main
+  cleanup_old_versions:
     runs-on: ubuntu-latest
-    needs: build_and_push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-publish
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Delete old package versions
+      - name: Delete old package versions on GHCR
         uses: snok/container-retention-policy@v3
         with:
-          # TOKEN: usa un PAT (Personal Access Token) con permessi `delete:packages` per il tuo utente/org.
-          # NON USARE ${{ secrets.GITHUB_TOKEN }} in quanto NON ha i permessi per eliminare versioni.
-          token: ${{ secrets.REPO_DELETE_TOKEN }}
-          account: <ACCOUNT_USERNAME_OR_ORG> # Il tuo nome utente o organizzazione
+          # IMPORTANTE: DEVI usare un PAT (Personal Access Token) con permesso "delete:packages".
+          # Non usare GITHUB_TOKEN. Configura un secret chiamato REPO_DELETE_TOKEN.
+          token: ${{ secrets.REPO_DELETE_TOKEN }} 
+          account: <ACCOUNT_USERNAME_OR_ORG> # Il tuo nome utente o organizzazione GitHub
           image-names: <YOUR_IMAGE_NAME>
-          keep-n-most-recent: 3 # Mantiene le 3 versioni più recenti taggate
-          registry: <YOUR_REGISTRY> # Esempio: ghcr.io
+          keep-n-most-recent: 3 # Mantiene le 3 versioni taggate più recenti.
+          registry: ${{ env.REGISTRY }}
