@@ -89,7 +89,9 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.REGISTRY }}/${{ env.DOCKER_TAG }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.DOCKER_TAG }}
+            ${{ env.REGISTRY }}/${{ env.DOCKER_TAG%:* }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -109,10 +111,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Delete old image versions (keep last 3)
+      - name: Delete old image versions (keep last 10)
         uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ github.event.repository.name }}
           package-type: container
-          min-versions-to-keep: 3
+          min-versions-to-keep: 10
           token: ${{ secrets.GITHUB_TOKEN }}
+          delete-untagged-versions: true
+          days-before-deletion: 0
