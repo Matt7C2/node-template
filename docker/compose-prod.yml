@@ -1,7 +1,7 @@
 name: node-template # nome del compose in generale
 services:
   node-template:
-    restart: always
+    restart: unless-stopped #always, unless-stopped
     container_name: node-template
     image: ghcr.io/matt7c2/node-template
     environment:
