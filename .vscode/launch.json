@@ -1,34 +1,44 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Start Debug",
-            "runtimeExecutable": "pnpm",
-            "runtimeArgs": [
-              "run-script",
-              "debug"
-            ],
-            "restart": true,
-            "console": "integratedTerminal",
-            //"internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Start Prod",
-            "runtimeExecutable": "pnpm",
-            "runtimeArgs": [
-              "run-script",
-              "prod"
-            ],
-            "restart": true,
-            "console": "integratedTerminal",
-            //"internalConsoleOptions": "neverOpen"
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    // Lanciato da pnpm script con variabili di ambiente
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Start pnpm Debug",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "run-script",
+        "debug"
+      ],
+      "restart": true,
+      "console": "integratedTerminal",
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Start pnpm Prod",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "run-script",
+        "prod"
+      ],
+      "restart": true,
+      "console": "integratedTerminal",
+      //"internalConsoleOptions": "neverOpen"
+    },
+    // Direttamente da node bypassando pnpm
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Start node",
+      "restart": true,
+      "program": "${workspaceFolder}/src/index.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+    }
+  ]
 }
