@@ -31,9 +31,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          # Usa l'utente che ha attivato il workflow
           username: ${{ github.actor }} 
-          # Usa il token predefinito di GitHub Actions
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Docker metadata and tags
@@ -46,15 +44,17 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
             # Tag: versione univoca con l'ID del run
             type=raw,value=${{ github.run_id }}
-            # Tag: versione con short SHA (utile per identificazione)
+            # Tag: versione con short SHA
             type=sha,format=short
             
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          # Push solo su push, non su pull request
-          push: ${{ github.event_name != 'pull_request' }}
+          # 👇 AGGIORNAMENTO CHIAVE: specifica il percorso del Dockerfile
+          context: ./docker
+          file: ./docker/Dockerfile
+          # 👆 Il contesto è la cartella, il file è il Dockerfile specifico
+          push: ${{ github.event_name != 'pull_request' }} # Push solo su push
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -67,8 +67,7 @@ jobs:
       - name: Delete old package versions on GHCR
         uses: snok/container-retention-policy@v3
         with:
-          # IMPORTANTE: DEVI usare un PAT (Personal Access Token) con permesso "delete:packages".
-          # Non usare GITHUB_TOKEN. Configura un secret chiamato REPO_DELETE_TOKEN.
+          # RICORDA: serve un PAT con permesso "delete:packages".
           token: ${{ secrets.REPO_DELETE_TOKEN }} 
           account: <ACCOUNT_USERNAME_OR_ORG> # Il tuo nome utente o organizzazione GitHub
           image-names: <YOUR_IMAGE_NAME>
