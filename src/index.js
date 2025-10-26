@@ -26,7 +26,10 @@ const main = async () => {
     logger.info(`docker env -> ENV_DOCKER: ${process.env.ENV_DOCKER}`)
     logger.info(`docker env -> TZ: ${process.env.TZ}`)
 
-    //await wait(300); # per il container 
+    // Attende 1 secondo
+    await wait(1); 
+
+    logger.info('Fine');
 }
 
 main();
