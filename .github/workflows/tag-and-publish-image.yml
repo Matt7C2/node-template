@@ -119,4 +119,4 @@ jobs:
           min-versions-to-keep: 10
           token: ${{ secrets.GITHUB_TOKEN }}
           delete-untagged-versions: true
-          days-before-deletion: 0
+          days-before-deletion: 0 
