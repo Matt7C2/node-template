@@ -1,29 +1,41 @@
 import winston from 'winston';
+import chalk from 'chalk';
 
-// Definizione colori personalizzati
+// Definizione colori personalizzati per i livelli
 const customColors = {
-    error: 'red',
-    warn: 'yellow',
-    info: 'cyan',
-    debug: 'magenta',
+  error: 'red',
+  warn: 'yellow',
+  info: 'cyan',
+  debug: 'magenta',
 };
 
+// Formatter custom per gestire opzione { color: '...' }
+const colorizeMessage = winston.format((info) => {
+  if (info.color) {
+    // Usa chalk dinamicamente (es: 'bgBlue.white' → chalk.bgBlue.white)
+    const parts = info.color.split('.');
+    let fn = chalk;
+    for (const p of parts) {
+      if (fn[p]) fn = fn[p];
+    }
+    if (typeof fn === 'function') {
+      info.message = fn(info.message);
+    }
+  }
+  return info;
+});
+
 const logFormat = winston.format.combine(
-    // winston.format.colorize({ all: true }), // Colora tutto il messaggio 
-    winston.format.colorize({ level: true }), // Colora tsolo il tipo
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.printf(({ timestamp, level, message }) => `[${timestamp}] [${level}] ${message}`)
+  colorizeMessage(), // applica il colore custom
+  winston.format.colorize({ level: true }), // colora solo il livello
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.printf(({ timestamp, level, message }) => `[${timestamp}] [${level}] ${message}`)
 );
 
-// Configura i colori in Winston
 winston.addColors(customColors);
 
-// Inizializzazione
 export const logger = winston.createLogger({
-    level: 'info', // Mostra tutti i log fino a debug
-    format: logFormat,
-    transports: [
-        new winston.transports.Console(), // Stampa colorata nel terminale
-        // new winston.transports.File({ filename: 'app.log' }) // Log normale su file
-    ]
+  level: 'info',
+  format: logFormat,
+  transports: [new winston.transports.Console()],
 });
