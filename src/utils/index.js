@@ -35,7 +35,7 @@ const logFormat = winston.format.combine(
 winston.addColors(customColors);
 
 export const logger = winston.createLogger({
-  level: 'info',
+  level: process.env.ENV === 'debug' ? 'debug': 'info',
   format: logFormat,
   transports: [new winston.transports.Console()],
 });
